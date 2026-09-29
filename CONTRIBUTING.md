@@ -1,141 +1,22 @@
 # Contributing
 
-Guidelines for contributing to Azalea.
+Azalea is a Bun/TypeScript project. Start with the [local setup guide](docs/development/setup.md) and read the [code conventions](docs/development/conventions.md) before changing runtime behavior.
 
-## Setup
+## Workflow
+- Branch naming: `feature/<short-description>`, `fix/<short-description>`, or `chore/<short-description>`. Include an issue number when one exists, for example `fix/123-command-registration`.
+- Commit format: Conventional Commits, for example `feat: add infraction logging command`. To use the repository template, run `git config --local commit.template .gitmessage`.
+- Keep pull requests focused; the project does not define a numeric size limit.
 
-### Prerequisites
+## Pull requests
+- Required CI jobs are lint, typecheck, migrations, Docker image build, tests, dependency audit, and actionlint. Branch-protection settings are configured in GitHub and are not defined in this repository.
+- Request review from the project maintainer listed in [CODEOWNERS](.github/CODEOWNERS).
+- Docs updated in the same PR when behavior, config, or interfaces change
 
-- [Bun](https://bun.sh/) (v1.3+)
-- SQLite (bundled with Bun)
-- A Discord bot token
+## Definition of done
+- [ ] Relevant tests added or updated and pass locally.
+- [ ] `bun run lint`, `bun run typecheck`, and relevant Prisma checks pass.
+- [ ] Docs updated when behavior, configuration, or interfaces change.
+- [ ] Migration and recovery implications are documented, if applicable.
+- [ ] New failure modes have useful logs and, where appropriate, Sentry reporting.
 
-### Installation
-
-```bash
-bun run setup        # bun install + bun run db:generate
-```
-
-### Environment
-
-Copy `.env.example` to `.env` and fill in the required values. See [README.md](README.md#2-configure-environment-variables) for the full table.
-
-### Database
-
-```bash
-bun run db:migrate    # Apply migrations
-```
-
-`bun run db` applies migrations and regenerates the Prisma client in one go.
-
-### Running
-
-```bash
-bun start
-```
-
-## Code Style
-
-### TypeScript
-
-- Strict mode enabled (`strict: true` in tsconfig)
-- Use `@utils/`, `@managers/`, `@/` path aliases (defined in tsconfig)
-- Prefer explicit return types on exported functions and public methods
-- Use `as` casts for discord.js type incompatibilities (not `@ts-expect-error`)
-
-### Naming Conventions
-
-| Kind | Convention | Example |
-|------|-----------|---------|
-| Files | PascalCase (commands, events, components) | `ModerationActivity.ts` |
-| Utility files | camelCase | `eventLogging.ts` |
-| Classes | PascalCase | `MessageCache` |
-| Types/Interfaces | PascalCase | `CommandResponse` |
-| Enums | PascalCase (name), PascalCase (members) | `InfractionSource.Quick` |
-| Functions | camelCase | `humanizeDuration()` |
-| Private methods | `_camelCase` | `_buildSearchQuery()` |
-| Constants | UPPER_SNAKE_CASE | `MAX_MUTE_DURATION` |
-| Config properties | snake_case | `ban_delete_message_days` |
-
-### Time Values
-
-All time-based configuration values and constants use **milliseconds** unless documented otherwise. The only exception is the `duration` column in the `MuteRequest` database table, which stores seconds.
-
-### ESLint
-
-The project uses ESLint with TypeScript rules. Run the linter:
-
-```bash
-bun run lint           # check
-bun run lint:fix       # auto-fix
-```
-
-All code must pass linting with zero errors and zero warnings.
-
-### Formatting
-
-- Tabs for indentation
-- Double quotes for strings
-- Semicolons required
-- Trailing commas in multiline structures
-
-## Testing
-
-```bash
-bun test
-```
-
-Tests live in the `tests/` directory. All tests must pass before merging.
-
-## Type Checking
-
-```bash
-bun run typecheck
-```
-
-Must produce zero errors.
-
-## Verify Everything
-
-```bash
-bun run verify
-```
-
-Runs the same checks CI runs (lint + typecheck + tests + Prisma schema validation + migration drift check). Use this before pushing.
-
-## Project Structure
-
-```
-src/
-  index.ts                  # Entry point
-  commands/                 # Slash and context menu commands
-  components/               # Button and select menu handlers
-  events/                   # Discord event listeners
-  managers/
-    commands/               # Command registration and dispatch
-    components/             # Component registration and dispatch
-    config/                 # Guild config loading, schema, and validation
-    events/                 # Event listener registration
-  utils/                    # Shared utilities
-configs/                    # Guild YAML configuration files
-prisma/                     # Database schema and migrations
-tests/                      # Test files
-```
-
-## Guild Configuration
-
-Guild configs are YAML files in `configs/` named by guild ID (e.g., `configs/123456789.yml`). They are validated against the Zod schema in `src/managers/config/schema.ts`. See [docs/configuration.md](docs/configuration.md) for the full schema.
-
-## Key Patterns
-
-### Fire-and-Forget Logging
-
-The `log()` function has its own internal try/catch with Sentry reporting. Unawaited `log()` calls are intentional.
-
-### `.catch(() => null)`
-
-Used deliberately for Discord API calls where failure is expected and acceptable (e.g., fetching a user who may not exist).
-
-### Config Data
-
-`RawGuildConfig` is inferred from the Zod schema via `z.infer`. Changing property names in `schema.ts` automatically updates the type everywhere.
+See [testing](docs/development/testing.md), [CI/CD](docs/operations/ci-cd.md), and [conventions](docs/development/conventions.md).

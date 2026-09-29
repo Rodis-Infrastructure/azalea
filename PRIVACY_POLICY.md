@@ -1,6 +1,6 @@
 # Privacy Policy
 
-Effective date: June 11th, 2026
+Effective date: September 29, 2026
 
 ## Overview
 
@@ -40,8 +40,8 @@ Azalea reads and stores member-related data when needed for join/leave logs, mod
 
 Azalea stores operational data in the configured SQLite database. Retention depends on the feature:
 
-- messages are kept for 28 days;
-- reports and user/moderation records are kept until resolved, archived, or removed by the cleanup jobs;
+- cached messages are kept for the period configured by the operator; the checked-in configuration and default are 7 days;
+- reports are removed after their configured TTL, when one is set; infractions and ban/mute requests have no general automatic expiry;
 - temporary roles and temporary messages are removed when they expire;
 - reminders are kept until they are completed or deleted.
 

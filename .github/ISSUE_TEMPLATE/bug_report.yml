@@ -1,0 +1,50 @@
+name: Bug report
+description: Report a reproducible problem with Azalea.
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        For security vulnerabilities, do not open a public issue. Follow the private reporting instructions in [SECURITY.md](https://github.com/Rodis-Infrastructure/azalea-new/blob/main/SECURITY.md).
+  - type: textarea
+    id: summary
+    attributes:
+      label: Describe the problem
+      description: What happened, and what did you expect to happen?
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      description: Include the command or interaction and the configuration needed to reproduce it. Remove tokens, IDs, and other private data.
+      placeholder: |
+        1. Configure ...
+        2. Run ...
+        3. Observe ...
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs or screenshots
+      description: Redact secrets and personal information before sharing.
+      render: text
+  - type: input
+    id: version
+    attributes:
+      label: Azalea version or commit
+      placeholder: e.g. v1.2.3 or commit SHA
+  - type: input
+    id: environment
+    attributes:
+      label: Runtime environment
+      description: Include Bun, Node.js, operating system, and deployment method.
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before submitting
+      options:
+        - label: I searched existing issues for this problem.
+          required: true
