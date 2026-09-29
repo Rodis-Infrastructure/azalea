@@ -38,18 +38,18 @@ model MuteRequest {
 }
 
 model Message {
-  id           String   @id
-  author_id    String
-  channel_id   String
-  guild_id     String
-  created_at   DateTime
-  deleted      Boolean  @default(false)
-  content      String?
-  sticker_id   String?
+  id               String   @id
+  author_id        String
+  channel_id       String
+  guild_id         String
+  created_at       DateTime
+  deleted          Boolean  @default(false)
+  content          String?
+  sticker_id       String?
   /// Number of attachments the message had
-  attachment_count Int @default(0)
+  attachment_count Int      @default(0)
   /// ID of the message this message is replying to
-  reference_id String?
+  reference_id     String?
 
   /// Index for counting a user's messages
   @@index([author_id, guild_id])
