@@ -1,0 +1,8 @@
+# <type>[optional scope]: <imperative summary>
+#
+# Use Conventional Commit types such as feat, fix, docs, refactor, test,
+# chore, or ci. Keep the subject concise and omit the trailing period.
+#
+# [optional body: explain context and motivation]
+#
+# [optional footer(s): BREAKING CHANGE: ... or Fixes #123]

@@ -1,94 +1,78 @@
 # Commands
 
-Reference for every slash and context menu command Azalea registers.
+**Owner:** Azalea maintainers | **Last reviewed:** 2026-09-29 | **Status:** Current
 
-Permissions for most moderation commands are controlled per-guild via the [permissions config](configuration.md#permissions). Commands listed without a permission requirement are available to anyone with the underlying Discord permissions (e.g. `Manage Roles` for `/role members`).
+Commands are guild-only and default to Discord's `ManageGuild` permission unless overridden. Feature
+actions may additionally check per-guild Azalea role permissions; those mappings do not grant
+Discord permissions. Commands can also require role hierarchy and channel access.
 
-## Slash Commands
+## Slash commands
+
+### Testing and administration
+
+| Command                    | Purpose                                                                                                                                                                                                                                |
+|----------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `/create-testing-template` | Destructively rebuild a small test guild with sample channels/roles and a generated config. Owner-only; requires fewer than 10 members, exact confirmation, and bot `Manage Channels`, `Manage Roles`, and `Manage Guild` permissions. |
+
+**Warning:** this command deletes every existing channel and every non-managed role in the guild
+(except `@everyone`) before recreating the testing layout. Never run it in a real or valuable
+server.
 
 ### Moderation
 
-| Command | Description |
-|---|---|
-| `/ban` | Ban a user from the server. |
-| `/kick` | Kick a member from the server. |
-| `/mute` | Mute a member with a duration. |
-| `/unmute` | Unmute a member. |
-| `/unban` | Unban a user. |
-| `/warn` | Warn a user. |
-| `/note` | Add a note to a user's infraction history. |
-| `/purge all` | Purge messages in a channel. |
-| `/purge user` | Purge messages from a specific user. |
-| `/lockdown start` | Lock down the server. |
-| `/lockdown end` | End a server lockdown. |
-| `/censor nickname` | Censor a member's nickname. |
+| Command                                                         | Purpose                                                    |
+|-----------------------------------------------------------------|------------------------------------------------------------|
+| `/ban`, `/kick`, `/mute`, `/unmute`, `/unban`, `/warn`, `/note` | Apply or record moderation actions.                        |
+| `/purge all`, `/purge user`                                     | Remove messages in a channel or by a specified user.       |
+| `/lockdown start`, `/lockdown end`                              | Apply or restore configured channel permission overwrites. |
+| `/censor nickname`                                              | Replace a member nickname according to guild config.       |
 
-### Infractions
+### Infractions and activity
 
-| Command | Description |
-|---|---|
-| `/infraction search` | Search a user's infractions (filterable). |
-| `/infraction info` | View infraction details by ID. |
-| `/infraction duration` | Update an infraction's duration. |
-| `/infraction reason` | Update an infraction's reason. |
-| `/infraction archive` | Archive an infraction. |
-| `/infraction restore` | Restore an archived infraction. |
-| `/infraction active` | View a user's active mute or ban. |
-| `/infraction copy-history` | Transfer infractions between users. |
-| `/moderation activity` | View moderation stats for a user, filterable by month and year. |
+| Command                                      | Purpose                                             |
+|----------------------------------------------|-----------------------------------------------------|
+| `/infraction search`, `/infraction info`     | Search infractions and inspect an infraction by ID. |
+| `/infraction duration`, `/infraction reason` | Update an infraction's expiry or reason.            |
+| `/infraction archive`, `/infraction restore` | Archive or restore an infraction.                   |
+| `/infraction active`                         | Show a user's active mute or ban.                   |
+| `/infraction copy-history`                   | Transfer infractions between users.                 |
+| `/moderation activity`                       | View moderation activity with month/year filters.   |
 
-### Highlights
+### Highlights and reminders
 
-| Command | Description |
-|---|---|
-| `/highlight pattern add` | Add a highlight pattern. |
-| `/highlight pattern remove` | Remove a highlight pattern. |
-| `/highlight pattern clear` | Clear all highlight patterns. |
-| `/highlight channel add` | Add a channel to highlight scoping. |
-| `/highlight channel remove` | Remove a channel from highlight scoping. |
-| `/highlight channel clear` | Clear all highlight channel scoping. |
-| `/highlight list` | List your highlights. |
-| `/highlight erase` | Erase a user's highlights (admin). |
+| Command                                                                           | Purpose                                                             |
+|-----------------------------------------------------------------------------------|---------------------------------------------------------------------|
+| `/highlight pattern add`, `/highlight pattern remove`, `/highlight pattern clear` | Manage keyword/pattern subscriptions.                               |
+| `/highlight channel add`, `/highlight channel remove`, `/highlight channel clear` | Scope highlights to channels.                                       |
+| `/highlight list`, `/highlight erase`                                             | List own highlights or erase a user's highlights (admin operation). |
+| `/reminders add`, `/reminders list`, `/reminders remove`, `/reminders clear`      | Create, view, and remove personal reminders.                        |
 
-### Reminders
+### Information and utilities
 
-| Command | Description |
-|---|---|
-| `/reminders add` | Create a reminder. |
-| `/reminders list` | List your reminders. |
-| `/reminders remove` | Delete a reminder. |
-| `/reminders clear` | Clear all your reminders. |
+| Command                           | Purpose                                                       |
+|-----------------------------------|---------------------------------------------------------------|
+| `/search`, `/user info`           | Find users and show user details; Roblox lookup is optional.  |
+| `/role members`                   | List members with specified roles.                            |
+| `/rule`, `/faq`                   | Display configured rules or quick responses.                  |
+| `/config guild`, `/config global` | View guild/global configuration.                              |
+| `/list-permissions`               | Show bot permissions available in a channel.                  |
+| `/process info`                   | Display process diagnostics such as uptime, ping, and memory. |
+| `/scan url`                       | Scan a URL with VirusTotal; requires `VIRUSTOTAL_API_KEY`.    |
 
-### Information
+## Context menu commands
 
-| Command | Description |
-|---|---|
-| `/search` | Find a user by display name. |
-| `/user info` | Get information about a user. |
-| `/role members` | List members with specified roles. |
-| `/rule` | Display a configured server rule. |
-| `/faq` | Send a configured quick response. |
-| `/config guild` | View the guild configuration. |
-| `/config global` | View the global configuration. |
-| `/list-permissions` | List bot permissions in a channel. |
-| `/process info` | Bot diagnostics (uptime, ping, memory). |
+| Menu item          | Type    | Purpose                                          |
+|--------------------|---------|--------------------------------------------------|
+| Purge messages     | User    | Purge messages from a selected user.             |
+| User info          | User    | Show user information.                           |
+| Search infractions | User    | Search a selected user's infraction history.     |
+| Censor nickname    | User    | Censor a selected member's nickname.             |
+| Report user        | User    | Open a user report form.                         |
+| Quick mute (30m)   | Message | Quick-mute the message author for 30 minutes.    |
+| Quick mute (1h)    | Message | Quick-mute the message author for one hour.      |
+| Report message     | Message | Submit a report for the selected message.        |
+| Store media        | Message | Store/log attachments from the selected message. |
 
-### Utilities
-
-| Command | Description |
-|---|---|
-| `/scan url` | Scan a URL with VirusTotal (requires `VIRUSTOTAL_API_KEY`). |
-
-## Context Menu Commands
-
-| Menu Item | Type | Description |
-|---|---|---|
-| Purge messages | User | Purge messages from a user. |
-| User info | User | View user info. |
-| Search infractions | User | Search a user's infractions. |
-| Censor nickname | User | Censor a user's nickname. |
-| Report user | User | Report a user (modal). |
-| Quick mute (30m) | Message | Quick mute author for 30 minutes. |
-| Quick mute (1h) | Message | Quick mute author for 1 hour. |
-| Report message | Message | Report a message. |
-| Store media | Message | Store message attachments to logs. |
+Some features are also triggered by buttons, select menus, modals, or configured reactions in event
+handlers; they are not separate slash commands. Source of truth is the command and component classes
+in `src/commands/` and `src/components/`.
