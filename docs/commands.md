@@ -1,10 +1,8 @@
 # Commands
 
-**Owner:** Azalea maintainers | **Last reviewed:** 2026-09-29 | **Status:** Current
-
-Commands are guild-only and default to Discord's `ManageGuild` permission unless overridden. Feature
-actions may additionally check per-guild Azalea role permissions; those mappings do not grant
-Discord permissions. Commands can also require role hierarchy and channel access.
+Commands are guild-only and require Discord's `ManageGuild` permission unless overridden. Some
+actions also check Azalea's per-guild role permissions, which don't grant Discord permissions. The
+source of truth is `src/commands/` and `src/components/`.
 
 ## Slash commands
 
@@ -14,9 +12,8 @@ Discord permissions. Commands can also require role hierarchy and channel access
 |----------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `/create-testing-template` | Destructively rebuild a small test guild with sample channels/roles and a generated config. Owner-only; requires fewer than 10 members, exact confirmation, and bot `Manage Channels`, `Manage Roles`, and `Manage Guild` permissions. |
 
-**Warning:** this command deletes every existing channel and every non-managed role in the guild
-(except `@everyone`) before recreating the testing layout. Never run it in a real or valuable
-server.
+**Warning:** it deletes every channel and every non-managed role (except `@everyone`) first. Never
+run it in a real server.
 
 ### Moderation
 
@@ -73,6 +70,4 @@ server.
 | Report message     | Message | Submit a report for the selected message.        |
 | Store media        | Message | Store/log attachments from the selected message. |
 
-Some features are also triggered by buttons, select menus, modals, or configured reactions in event
-handlers; they are not separate slash commands. Source of truth is the command and component classes
-in `src/commands/` and `src/components/`.
+Other features run from buttons, select menus, modals, or configured reactions rather than commands.

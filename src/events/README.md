@@ -1,5 +1,3 @@
 # Gateway events
 
-Add one default-exported `EventListener` subclass per `.ts` file. `EventListenerManager` mounts each handler on the Discord client; set `options.once` only for events that should run once per process. Implement `execute` using the event's discord.js arguments.
-
-The manager provides request context and logs/captures rejected handler work. Do not add a second direct client listener for the same behavior. `Ready` owns startup-only scheduled work; see [runtime lifecycle](../../docs/components/discord-runtime.md) and [async data flow](../../docs/architecture/data-flow.md).
+One default-exported `EventListener` subclass per file; `EventListenerManager` mounts it on the client and wraps it with request context and error capture. Set `options.once` only for once-per-process events, and don't add a second raw client listener for the same behavior. Startup-only scheduled work belongs in `Ready.ts`.

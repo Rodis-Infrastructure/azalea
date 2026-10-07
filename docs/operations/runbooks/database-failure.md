@@ -1,39 +1,27 @@
 # Runbook: Database or migration failure
 
-**Owner:** Azalea maintainers | **Last reviewed:** 2026-09-29 | **Status:** Current
+**Owner:** Azalea maintainers | **Last reviewed:** 2026-10-07 | **Status:** Current
 
-## Symptoms
-
-Startup or commands report Prisma errors, SQLite cannot open the database, migration deployment
-fails, or database corruption is suspected.
-
-## Impact
-
-Persistent moderation state and features that rely on SQLite may be unavailable. Avoid repeated
-deployment attempts until the failing migration and DB path are understood.
+**Symptoms:** Prisma errors at startup or in commands, SQLite can't open the file, `prisma migrate
+deploy` fails, or corruption is suspected. Don't retry deploys until the cause is understood.
 
 ## Diagnosis
 
-1. Record the exact Prisma/SQLite error and deployment revision.
-2. Confirm the active `DATABASE_URL` points to a writable file and its parent directory exists.
-3. Check filesystem permissions and free disk space.
-4. Compare the database migration history with `prisma/migrations/`; do not edit migration history
-   or delete the database as a diagnostic shortcut.
-5. Identify the active DB path. PM2 backup script targets `prisma/azalea.db`; Docker stores the DB
-   in the `data` named volume.
+1. Record the exact error and the deployed revision.
+2. Find the active database path: `DATABASE_URL` on PM2 hosts, the `data` volume on Docker.
+3. Check that the directory exists, is writable, and has free disk space.
+4. Compare the applied migrations with `prisma/migrations/`. Don't edit migration history or delete
+   the database to diagnose.
 
 ## Mitigation
 
-Pause deployment and preserve a copy of the database before repairs. For a migration defect, prefer
-a reviewed forward fix unless rollback compatibility has been established. Restore a verified backup
-only if required; restoration discards writes made after the backup. See [rollback](../rollback.md).
+Pause deploys and copy the database before any repair. Prefer a reviewed forward-fix migration.
+Restore a backup only if necessary; see [rollback](../rollback.md).
 
 ## Verification
 
-Run migrations against the intended DB, start the app, check `/healthz`, and verify representative
-read/write moderation workflows using a controlled guild.
+Migrations apply cleanly, `/healthz` reports ready, and representative read/write commands work in
+a controlled guild.
 
-## Escalation
-
-Involve the maintainer before manual schema edits or data restoration. Treat possible data
-corruption/exposure as an incident.
+Involve the maintainers before manual schema edits or restores, and treat possible corruption or
+exposure as an [incident](../incident-response.md).

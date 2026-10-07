@@ -1,71 +1,37 @@
 # Conventions
 
-**Owner:** Azalea maintainers | **Last reviewed:** 2026-09-29 | **Status:** Current
-
 ## Structure
 
-| Path                       | Purpose                                                         |
-|----------------------------|-----------------------------------------------------------------|
-| `src/commands/`            | Slash and context-menu command classes                          |
-| `src/components/`          | Buttons, selects, and modal interaction handlers                |
-| `src/events/`              | Discord gateway event listeners                                 |
-| `src/managers/commands/`   | Command discovery, publication, and dispatch                    |
-| `src/managers/components/` | Component discovery and dispatch                                |
-| `src/managers/events/`     | Event listener discovery and mounting                           |
-| `src/managers/config/`     | Config schemas, loading, defaults, guild runtime helpers        |
-| `src/utils/`               | Shared helpers, moderation persistence, logging, Sentry, health |
-| `prisma/`                  | Prisma schema and ordered SQL migrations                        |
-| `configs/`                 | One YAML configuration per Discord guild ID                     |
-| `tests/`                   | Bun tests, one `.test.ts` file per area                         |
+| Path                   | Purpose                                                     |
+|------------------------|-------------------------------------------------------------|
+| `src/commands/`        | Slash and context-menu command classes                      |
+| `src/components/`      | Button, select-menu, and modal handlers                     |
+| `src/events/`          | Discord gateway event listeners                             |
+| `src/managers/`        | Discovery and dispatch for the above; config loading        |
+| `src/utils/`           | Shared helpers, moderation persistence, logging, Sentry, health |
+| `prisma/`              | Prisma schema and migrations                                |
+| `configs/`             | One YAML config per guild ID                                |
+| `tests/`               | Bun tests, one `.test.ts` file per area                     |
 
-Command, event, and component files use PascalCase. Utility filenames use camelCase.
+Command, event, and component files use PascalCase; utility files use camelCase.
 
 ## Code style
 
-ESLint is configured in `eslint.config.js`; TypeScript settings and aliases are in `tsconfig.json`.
-Use tabs, double quotes, and semicolons, consistent with nearby code. ESLint forbids trailing
-commas. `bun run lint` checks the tree and `bun run lint:fix` applies safe ESLint fixes. There is no
-separate formatter command.
+ESLint (`eslint.config.js`) enforces style: tabs, double quotes, semicolons, no trailing commas. Run
+`bun run lint` or `bun run lint:fix`; there is no separate formatter. TypeScript runs in strict
+mode. Give exported functions and public methods explicit return types, and use the `@utils/`,
+`@managers/`, and `@/` path aliases where the lint rule requires them.
 
-TypeScript strict mode is enabled. Add explicit return types to exported functions and public
-methods; use `@utils/`, `@managers/`, and `@/` aliases instead of relative paths where the lint rule
-requires them.
+## Patterns
 
-## Commit messages
-
-Use Conventional Commits (`feat:`, `fix:`, `docs:`, `refactor:`, `test:`, `chore:`, or `ci:`).
-The root `.gitmessage` provides a subject/body/footer prompt; enable it per repository with
-`git config --local commit.template .gitmessage`.
-
-## Patterns to follow
-
-- Extend the relevant base class (`Command`, `GuildCommand`, `Component`, or `EventListener`) so the
-  manager can discover and wire it.
-- Keep guild-specific behavior driven by the validated `GuildConfig` rather than reading YAML ad
-  hoc.
-- Use Prisma's generated client and update `prisma/schema.prisma` plus a migration when changing
-  persistent data.
-- Capture unexpected operational errors through the existing logger/Sentry helpers with useful
-  source tags and non-sensitive context.
-- Use `runWithRequestContext` in new event/cron boundaries when context should follow emitted logs.
-
-## Patterns to avoid
-
-- Do not add undeclared environment variables, config keys, or database columns without updating
-  their source-of-truth schema and documentation.
-- Do not log tokens, API keys, raw credentials, or unnecessary private message content.
-- Avoid fire-and-forget promises except where a documented helper owns failure handling; unhandled
-  rejections are reported globally but should not be normal control flow.
-- Do not modify an accepted ADR in place; supersede it if the architectural decision changes.
-
-## Error handling and logging
-
-Use `Logger` for operational messages and Sentry capture helpers for unexpected failures when
-available. Event and cron managers wrap callbacks and report errors so one handler/tick failure does
-not become an unhandled rejection. Expected Discord API misses may be handled locally; do not
-silently suppress unexpected failures. Sentry scrubs configured secret environment values and
-removes URL query strings from breadcrumbs, but this is defense in depth: do not include secrets in
-logs or error context in the first place.
-
-Time values in code/config are milliseconds unless explicitly documented otherwise; the
-`MuteRequest.duration` database field is stored in seconds.
+- Extend `Command`, `GuildCommand`, `Component`, or `EventListener` so the managers discover and
+  wire the class.
+- Read guild behavior from `GuildConfig`, not ad hoc YAML.
+- Don't add environment variables, config keys, or database columns without updating their schema
+  and docs.
+- Log through `Logger`; capture unexpected failures with the Sentry helpers using source tags and
+  non-sensitive context. Never log tokens, keys, or unnecessary message content.
+- Use `runWithRequestContext` at new event/cron boundaries so context follows logs.
+- Avoid fire-and-forget promises unless a helper owns the failure handling.
+- Durations are milliseconds unless documented otherwise; `MuteRequest.duration` is stored in
+  seconds.

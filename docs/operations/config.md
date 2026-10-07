@@ -1,11 +1,10 @@
 # Configuration and secrets
 
-**Owner:** Azalea maintainers | **Last reviewed:** 2026-09-29 | **Status:** Current
+**Owner:** Azalea maintainers | **Last reviewed:** 2026-10-07 | **Status:** Current
 
 ## Environment variables
 
-Variables are read at runtime from `process.env`. `.env.example` is the checked-in inventory; never
-commit `.env` or real credentials.
+`.env.example` lists every variable. Never commit `.env` or real credentials.
 
 | Name                 | Purpose                             | Required | Secret? | Notes                                                                                                                         |
 |----------------------|-------------------------------------|---------:|--------:|-------------------------------------------------------------------------------------------------------------------------------|
@@ -16,51 +15,34 @@ commit `.env` or real credentials.
 | `VIRUSTOTAL_API_KEY` | `/scan url` lookups                 |       No |     Yes | Unset disables URL scanning.                                                                                                  |
 | `HEALTH_HOST`        | Health HTTP bind host               |       No |      No | Defaults to `127.0.0.1`; do not expose publicly.                                                                              |
 | `HEALTH_PORT`        | Health HTTP bind port               |       No |      No | Defaults to `7475`.                                                                                                           |
-| `NODE_ENV`           | Runtime/Sentry environment label    |       No |      No | Defaults to `development`; `test` prevents bot startup.                                                                       |
-| `LOG_LEVEL`          | Minimum console log level           |       No |      No | See `src/utils/logger.ts` for accepted values.                                                                                |
-| `LOG_FORMAT`         | Console log format                  |       No |      No | See `src/utils/logger.ts` for accepted values.                                                                                |
+| `NODE_ENV`           | Runtime/Sentry environment label    |       No |      No | Defaults to `development`; `production` lowers Sentry sampling; `test` skips bot startup.                                     |
+| `LOG_LEVEL`          | Minimum console log level           |       No |      No | `debug`, `info`, `warn`, or `error`; defaults to `info`.                                                                      |
+| `LOG_FORMAT`         | Console log format                  |       No |      No | `text` or `json`; defaults to `text`.                                                                                         |
 
-`LOG_LEVEL` accepts `debug`, `info`, `warn`, or `error` and defaults to `info`. `LOG_FORMAT` accepts
-`json` (otherwise text output is used). These settings are resolved when the logger module loads.
-
-## Adding a variable
-
-1. Add the read and validation/default behavior in the appropriate runtime module; secrets should
-   not be copied into config files.
-2. Document it in `.env.example` and this page, including whether optional and any network-binding
-   requirements.
-3. Set it in local `.env`, the production host environment, or the relevant GitHub Actions
-   secret/variable. Never put a real secret in a config, workflow, test, or commit.
-4. Add tests for validation/default behavior and ensure logs, thrown errors, and telemetry cannot
-   reveal its value.
-
-Global and guild settings are YAML, not environment variables. Their Zod source of truth is
-`src/managers/config/schema.ts`.
+To add a variable, document it in `.env.example` and this table, set it in each environment, and
+make sure logs, errors, and telemetry can't reveal secret values.
 
 ## Rotation
 
-| Secret                     | Frequency                                        | Procedure                                                                                                                             | Owner                      |
-|----------------------------|--------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------|----------------------------|
-| Discord bot token          | On suspected exposure or operator policy         | Regenerate in Discord Developer Portal, update runtime environment, reload the bot, verify reconnection, then revoke the prior token. | Bot maintainer             |
-| Sentry DSN                 | On suspected exposure or project reconfiguration | Update the DSN in Sentry and runtime environment; restart to apply.                                                                   | Sentry project maintainer  |
-| RoVer / VirusTotal API key | On suspected exposure or provider policy         | Regenerate with provider, replace runtime environment value, and verify the optional feature.                                         | Integration owner          |
-| GitHub SSH/deploy secrets  | On suspected exposure or host/key changes        | Rotate the host authorized key and repository secrets together; verify a controlled deploy.                                           | Repository/host maintainer |
+Rotate on suspected exposure; there is no fixed interval.
 
-No fixed rotation interval is specified by this repository. The SQLite database and YAML configs are
-sensitive operational data even when not technically credentials; restrict filesystem and backup
-access.
+| Secret                     | Procedure                                                                                          |
+|----------------------------|----------------------------------------------------------------------------------------------------|
+| Discord bot token          | Regenerate in the Developer Portal, update the environment, reload, and verify the bot reconnects. |
+| Sentry DSN                 | Update in Sentry and the environment; restart.                                                     |
+| RoVer / VirusTotal API key | Regenerate with the provider, update the environment, and verify the feature.                      |
+| GitHub SSH/deploy secrets  | Rotate the host's authorized key and the repository secrets together; verify a deploy.             |
+
+Treat the SQLite database, YAML configs, and backups as sensitive and restrict access to them.
 
 ## YAML configuration
 
-`azalea.cfg.yml` is required and configures global message-cache jobs. A `configs/` directory
-containing at least one `.yml` or `.yaml` file is also required. Each guild file is validated
-through Zod and defaults are applied by the schema; invalid YAML/schema prevents startup. Files for
-guilds the bot cannot fetch are skipped, so ensure each configured guild is accessible to the bot.
-IDs are Discord snowflakes (17–19 digits).
-
-Configuration is read and cached during startup; ordinary file edits require a bot restart to take
-effect. The built-in `/create-testing-template` command is a special case that generates and
-hot-loads a test-guild configuration.
+`azalea.cfg.yml` (global message-cache jobs) and at least one `configs/<guild_id>.yml` are
+required. Files are validated at startup and invalid config stops the bot; files for guilds the bot
+can't fetch are skipped. Edits take effect after a restart (except `/create-testing-template`,
+which hot-loads the config it generates). The Zod schema in `src/managers/config/schema.ts` is the
+full reference. IDs are Discord snowflakes (17–19 digits) and durations are milliseconds unless
+noted.
 
 Global example:
 
@@ -129,8 +111,8 @@ logging:
       scoping: { }
 ```
 
-An empty per-log scoping object inherits the guild's default scoping. Include and exclude
-channel/role lists support feature-specific filtering. Review reminder objects can set `cron`,
+An empty per-log `scoping` inherits `default_scoping`. A channel or role ID can't be in both an
+include and an exclude list. Review reminder objects can set `cron`,
 `embed` (default true), `count_threshold` (default 25), `age_threshold` (default 3,600,000 ms), and
 `mentioned_roles`; omitted cron defaults to hourly.
 
@@ -138,17 +120,12 @@ Bot permission values include `manage_infractions`, `transfer_infractions`, `man
 `manage_ban_requests`, `manage_message_reports`, `manage_user_reports`, `manage_highlights`,
 `view_infractions`, `view_moderation_activity`, `purge_messages`, `quick_mute`, `report_messages`,
 `manage_role_requests`, `manage_roles`, `forward_messages`, and `manage_guild_config`. The last
-permission is consumed by the sibling `azalea-editor`, not by the bot itself.
-
-All durations are milliseconds unless a field explicitly says otherwise. Include/exclude channel or
-role lists cannot contain the same ID in both lists. For exhaustive validation rules and
-logging-event names, refer to `src/managers/config/schema.ts`.
+permission is used by the sibling `azalea-editor`, not the bot.
 
 `stage_event_overrides` entries identify a `stage_id` and non-empty `channels` and `roles` lists.
 `lockdown` requires a non-empty channel list and permission overwrites; the bot snapshots prior
 state so it can revert the lockdown. Scheduled message `monitor_slug` values must be 1–50 uppercase
-letters/underscores. Review Discord permission names and the role/channel IDs carefully before
-enabling these automations.
+letters/underscores.
 
 The current logging event values are: `message_bulk_delete`, `message_delete`, `message_update`,
 `message_reaction_add`, `message_publish`, `interaction_create`, `voice_join`, `voice_leave`,
@@ -158,7 +135,6 @@ The current logging event values are: `message_bulk_delete`, `message_delete`, `
 `message_report_create`, `message_report_resolve`, `user_report_create`, `user_report_update`, and
 `user_report_resolve`.
 
-Highlights are managed at runtime rather than in YAML. Each user may have up to 20 patterns (45
-characters each), 40 whitelisted channels, and 40 blacklisted channels per guild. Patterns are
-checked for unsafe regular expressions and repetition limits. Pattern matching processes message
-content; configure appropriate channel/role scope.
+Highlights are managed with `/highlight`, not YAML: up to 20 patterns (45 characters each), 40
+whitelisted channels, and 40 blacklisted channels per user per guild. Unsafe regular expressions
+are rejected.

@@ -1,36 +1,30 @@
 # Deployment
 
-**Owner:** Azalea maintainers | **Last reviewed:** 2026-09-29 | **Status:** Current
+**Owner:** Azalea maintainers | **Last reviewed:** 2026-10-07 | **Status:** Current
 
-Supported runtime deployment paths are PM2 on a long-running host and Docker Compose.
-See [CI/CD](ci-cd.md) for automation and [rollback](rollback.md) for recovery considerations.
+Production runs either under PM2 on a host or with Docker Compose. Both apply migrations before
+starting the bot. See [rollback](rollback.md) for recovery.
 
-## PM2 host deploy
+## PM2 host
 
-The CD workflow listens for successful CI runs on `main` or `master` and deploys via SSH. Its remote
-script currently runs `git pull origin main` and then calls `scripts/deploy.sh` from the repository
-root; deployments from a `master`-only setup would still pull `main` and require a workflow change.
-The deploy script pins Bun from `.bun-version`, installs production dependencies, makes up to three
-timestamped gzip backups of `prisma/azalea.db`, applies Prisma migrations, then runs
-`pm2 reload ecosystem.config.js --only azalea --update-env` from the parent directory.
+CD deploys automatically after CI passes (see [CI/CD](ci-cd.md)). Over SSH it runs
+`cd ~/Projects/azalea && git pull origin main && bash scripts/deploy.sh`, which:
 
-Required GitHub repository secrets: `SSH_HOST`, `SSH_USER`, and `SSH_KEY`; the workflow also passes
-`SSH_PORT`. The host needs Bun, PM2, `~/Projects/azalea`, a parent-directory `ecosystem.config.js`,
-and runtime environment variables including `DISCORD_TOKEN` and `DATABASE_URL`. `SENTRY_DSN` and
-integration keys are optional.
+1. Installs the Bun version in `.bun-version` if it differs.
+2. Runs `bun install --frozen-lockfile --production`.
+3. Backs up `prisma/azalea.db` to `prisma/backups/` (gzip, newest three kept).
+4. Runs `bun run db:migrate`.
+5. Runs `pm2 reload ecosystem.config.js --only azalea --update-env` from the parent directory.
 
-Manual host deployment:
+The host needs Bun, PM2, the repository at `~/Projects/azalea`, an `ecosystem.config.js` in the
+parent directory, and the runtime environment variables. To deploy manually, run the same command on
+the host.
 
-```sh
-cd ~/Projects/azalea
-git pull origin main
-bash scripts/deploy.sh
-```
+The CD script always pulls `main`, even when triggered from `master`.
 
-**Database path caveat:** the PM2 script's backup source is hard-coded to `prisma/azalea.db`, while
-`.env.example` and Docker use `file:data/azalea.db`. For PM2, either set `DATABASE_URL` to the
-backed-up file or update the script's backup path and verify it before deploying. A backup of a
-different path does not protect the active database.
+**Database path:** the backup step only copies `prisma/azalea.db`, while `.env.example` uses
+`file:data/azalea.db`. On PM2 hosts, point `DATABASE_URL` at the backed-up file or update the
+script; otherwise the backup doesn't cover the live database.
 
 ## Docker Compose
 
@@ -39,37 +33,16 @@ docker compose up -d --build
 docker compose logs -f bot
 ```
 
-Compose builds from `Dockerfile`, reads `.env`, and mounts the `data` named volume at
-`/usr/src/app/data`. The container starts with `prisma migrate deploy` followed by `bun start`,
-running as the non-root `bun` user. The database persists across rebuilds in that volume; migrations
-and schema are part of the image. Back up the volume separately—this repository does not configure
-automatic Docker backups.
+Compose reads `.env` and stores the database in the `data` named volume at `/usr/src/app/data`.
+The container runs as the non-root `bun` user and starts with `prisma migrate deploy && bun start`.
+Volume backups aren't automated. `docker compose down -v` deletes the volume and the database.
 
-`docker compose down -v` deletes the named data volume and its database; do not use it for routine
-upgrades.
+## After deploying
 
-## Ordering rules
+- Logs show Discord login and no startup errors.
+- `curl http://127.0.0.1:7475/healthz` on the host reports `ready: true`.
+- The bot is online and a low-risk command works.
+- For cron changes, watch the next scheduled run.
 
-Deploy code and matching migrations together. Both deploy paths apply migrations before the bot
-starts (PM2 deploy script or Docker entrypoint). Prisma migrations are forward-applied; do not
-assume an older application version can safely run against a newer schema. Back up the active
-database before high-risk schema changes and document recovery.
-
-## Post-deploy verification
-
-- Confirm the process/container stays running and logs show Discord login and successful startup.
-- Check `http://127.0.0.1:7475/healthz` locally on the host; `ready` should be `true`.
-- Confirm the bot is online, commands are present, and a low-risk command works in the intended
-  guild.
-- Check application logs and Sentry (if enabled) for startup, Discord API, database, and cron
-  failures.
-
-No fixed observation window or deployment SLO is defined. Observe through at least the next relevant
-scheduled job for changes affecting cron behavior.
-
-## Risky changes
-
-There is no feature-flag or canary framework in this repository. Test changes in a dedicated Discord
-guild and separate database before production. For schema changes, prefer backward-compatible
-expand/migrate/contract steps so the running or rollback version can tolerate the intermediate
-schema.
+There are no feature flags or canaries; test risky changes in a separate guild and database first.
+For schema changes, prefer additive steps the previous code version can still run against.

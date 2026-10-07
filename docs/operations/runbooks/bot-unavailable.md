@@ -1,39 +1,28 @@
 # Runbook: Bot unavailable
 
-**Owner:** Azalea maintainers | **Last reviewed:** 2026-09-29 | **Status:** Current
+**Owner:** Azalea maintainers | **Last reviewed:** 2026-10-07 | **Status:** Current
 
-## Symptoms
-
-Discord shows the bot offline, interactions fail, the process repeatedly exits, or loopback
-`/healthz` cannot connect / remains `ready: false`.
-
-## Impact
-
-Moderation and utility commands, event handling, and scheduled tasks may not be running. Assess
-whether guild staff need an alternate moderation path.
+**Symptoms:** the bot is offline in Discord, interactions fail, the process keeps restarting, or
+`/healthz` is unreachable or stuck at `ready: false`. Commands, events, and scheduled tasks may
+all be down; tell guild staff if they need another way to moderate.
 
 ## Diagnosis
 
-1. Check PM2/container status and latest stdout/stderr for boot errors or restarts.
-2. Query `http://127.0.0.1:7475/healthz` on the host; check bind settings and whether readiness was
-   reached.
-3. Confirm `DISCORD_TOKEN`, Discord connectivity, global/guild config files, and access to required
-   guilds.
-4. If boot reaches database access, check `DATABASE_URL`, directory permissions, disk space, and
-   migration state.
+1. Check PM2/container status and the latest logs for startup errors or restart loops.
+2. On the host, run `curl http://127.0.0.1:7475/healthz`.
+3. Check `DISCORD_TOKEN`, network access to Discord, the config files, and that the bot is still in
+   the configured guilds.
+4. If the error is from the database, follow the [database runbook](database-failure.md).
 
 ## Mitigation
 
-Stop a crash loop if it is repeatedly applying an unsafe action. Correct missing credentials/config
-or restore host/network connectivity, then start/reload once and observe logs. Keep the health
-service private.
+Fix the credentials, config, or connectivity, then start or reload once and watch the logs. Stop a
+crash loop if each restart repeats a harmful action.
 
 ## Verification
 
-Verify the process remains online, `/healthz` reports `ready: true`, the bot is online in Discord,
-registered commands respond, and no new boot errors appear.
+The process stays up, `/healthz` reports `ready: true`, the bot shows online, and commands
+respond.
 
-## Escalation
-
-Contact the bot host/repository maintainer. Follow [incident response](../incident-response.md) if
-moderation actions, credentials, or stored data may be compromised.
+Escalate to the maintainers, and follow [incident response](../incident-response.md) if moderation
+actions, credentials, or data may be affected.

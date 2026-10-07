@@ -1,50 +1,31 @@
 # Discord runtime
 
-**Owner:** Azalea maintainers | **Last reviewed:** 2026-09-29 | **Status:** Current
+The bot uses discord.js (`^14.26.4`) to connect to Discord, publish application commands, receive
+gateway events, and send API actions. Bun runs the TypeScript directly; there is no build step. Bun
+is pinned by `.bun-version` (CI and the deploy script read it; the Dockerfile pins the same version).
 
-## Role
+## Startup and shutdown
 
-The bot process uses discord.js to connect to Discord, publish application commands, receive gateway
-events, and send API actions/replies. Bun runs TypeScript directly; this project does not compile a
-separate runtime bundle.
+Order in `src/index.ts` matters:
 
-## Versions and entry points
+1. At module load: start the loopback `/healthz` server, register shutdown handlers, create the
+   Prisma and Discord clients.
+2. `main()`: check `DISCORD_TOKEN`, initialize Sentry if configured, cache components, log in, load
+   global and guild configs, cache commands, mount event listeners, publish commands, emit
+   `ClientReady`.
+3. The `Ready` handler starts cron jobs and marks `/healthz` ready.
 
-- Bun version is pinned by `.bun-version` (`1.3.14` at review time); Docker uses the corresponding
-  pinned Bun image.
-- `discord.js` is declared as `^14.26.4`.
-- `src/index.ts` constructs the health server, Prisma client, and Discord client.
-- Commands, event listeners, and interactive component handlers are discovered from `src/commands/`,
-  `src/events/`, and `src/components/`.
+On shutdown the bot stores queued messages, destroys the client, disconnects Prisma, and flushes
+Sentry. Startup failures exit non-zero; handler errors are logged and captured without stopping the
+process.
 
-## Runtime lifecycle
+## Permissions
 
-Startup order in `src/index.ts` is significant: the loopback `/healthz` endpoint and shutdown
-handlers start at module load; then `main()` validates `DISCORD_TOKEN`, initializes optional Sentry,
-caches components, logs into Discord, loads global and guild configs, caches commands, mounts event
-listeners, publishes commands, and emits `ClientReady`. That ready handler starts in-process cron
-work and marks health ready. Shutdown stores queued messages, destroys the Discord client,
-disconnects Prisma, and flushes Sentry.
-
-## Permissions and operation
-
-Discord application scopes, gateway intents, bot permissions, role hierarchy, and channel overwrites
-must match enabled features. Commands default to Discord's `ManageGuild` permission unless
-explicitly overridden. Selected actions/components also check per-guild Azalea role permissions;
-this is a separate permission system. See [commands](../commands.md)
-and [configuration](../operations/config.md).
-
-One unhandled request or event should not normally terminate the process: managers report handler
-errors, while startup failures exit non-zero. Unexpected global promise/exception handlers log and
-capture errors. Do not assume a caught API failure means the requested action succeeded.
+Discord scopes, intents, bot permissions, role hierarchy, and channel overwrites must match the
+enabled features. Commands default to Discord's `ManageGuild` permission; some actions also check
+Azalea's per-guild role permissions. See [commands](../commands.md).
 
 ## Testing
 
-Unit tests do not connect to a live guild. Validate gateway/API behavior using a dedicated bot and
-test guild. Keep the bot token out of test fixtures and CI logs.
-
-## Links
-
-- [discord.js documentation](https://discord.js.org/)
-- [Architecture overview](../architecture/overview.md)
-- [Bot unavailable runbook](../operations/runbooks/bot-unavailable.md)
+Unit tests don't connect to Discord. Verify gateway/API behavior with a dedicated bot and test
+guild, and keep the token out of fixtures and CI logs.

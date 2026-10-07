@@ -1,40 +1,23 @@
 # Configuration subsystem
 
-**Owner:** Azalea maintainers | **Last reviewed:** 2026-09-29 | **Status:** Current
+`ConfigManager` reads the global and guild YAML files, validates them with Zod, and caches
+`GuildConfig` instances for commands, listeners, logging, and scheduled tasks. The field reference
+is [configuration and secrets](../operations/config.md); the rationale is
+[ADR 0002](../architecture/decisions/0002-yaml-guild-configuration.md).
 
-## Role
+## Files
 
-`ConfigManager` reads YAML global/guild files, validates them with Zod, applies defaults, and caches
-`GuildConfig` instances used by commands, event listeners, logging, and scheduled tasks.
+- `azalea.cfg.yml`: global config, validated by `globalConfigSchema`.
+- `configs/<guild_id>.yml`: guild config, validated by `rawGuildConfigSchema`
+  (`src/managers/config/schema.ts`). `configs/example.yml` is ignored.
+- `src/managers/config/GuildConfig.ts`: runtime helpers and cron setup.
 
-## Source of truth and files
+Startup exits if `azalea.cfg.yml` is missing, `configs/` has no `.yml`/`.yaml` file, or any file
+fails validation. A file for a guild the bot can't fetch is skipped with a warning.
 
-- Global configuration: `azalea.cfg.yml`, validated by `globalConfigSchema`.
-- Guild configuration: `configs/<guild_id>.yml`, validated by `rawGuildConfigSchema` in
-  `src/managers/config/schema.ts`.
-- Runtime configuration helpers and defaults: `src/managers/config/GuildConfig.ts`.
-- Startup requires a `configs/` directory with at least one `.yml` or `.yaml` file. Invalid
-  YAML/schema fails startup; a file for a guild the bot cannot fetch is skipped and does not provide
-  usable guild config.
+## Changing a field
 
-Use the [configuration and secrets reference](../operations/config.md) for environment variables,
-config sections, defaults, and permissions. YAML IDs are Discord snowflakes. Durations use
-milliseconds unless a field explicitly says otherwise.
-
-## Scoping and access
-
-Channel/role include and exclude rules are validated to prevent the same ID appearing in both. Guild
-permission mappings grant Azalea feature permissions to specified roles; they do not grant native
-Discord permissions. `manage_guild_config` is for the sibling editor service and is not checked by
-the bot itself.
-
-## Change procedure
-
-Add/modify schema fields in `schema.ts`, update the inferred types and any `GuildConfig` behavior,
-change representative YAML as appropriate, and add/update config tests.
-Update [operations/config.md](../operations/config.md) for the user-facing field reference. Validate
-all local config with `bun run test` and the CI schema checks; do not include real production IDs or
-credentials in generic examples.
-
-The implementation-derived rationale and tradeoffs are recorded
-in [ADR 0002](../architecture/decisions/0002-yaml-guild-configuration.md).
+1. Edit the schema in `schema.ts` and any `GuildConfig` behavior that uses it.
+2. Update representative YAML and config tests.
+3. Update [operations/config.md](../operations/config.md). Don't put real production IDs or
+   credentials in examples.

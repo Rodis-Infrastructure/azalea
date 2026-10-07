@@ -40,7 +40,7 @@ Azalea reads and stores member-related data when needed for join/leave logs, mod
 
 Azalea stores operational data in the configured SQLite database. Retention depends on the feature:
 
-- cached messages are kept for the period configured by the operator; the checked-in configuration and default are 7 days;
+- cached messages are kept for 7 days by default (operators may configure a different period);
 - reports are removed after their configured TTL, when one is set; infractions and ban/mute requests have no general automatic expiry;
 - temporary roles and temporary messages are removed when they expire;
 - reminders are kept until they are completed or deleted.
